@@ -214,5 +214,27 @@ Este proyecto está bajo la Licencia MIT - ver archivo [LICENSE](LICENSE) para d
 ## 🔗 Enlaces útiles
 
 - **Repositorio**: [GitHub](https://github.com/OscarDJL25/tasks-api-pdm)
-- **API en producción**: [Vercel](https://tasks-api-fh07ztm9g-oscar-daniel-de-jesus-lucios-projects.vercel.app)
+- **API en producción**: [https://tasks-api-pdm.vercel.app](https://tasks-api-pdm.vercel.app)
 - **Base de datos**: PostgreSQL en AWS RDS
+
+## 📱 Endpoints principales para tu app móvil
+
+### Autenticación
+```
+POST https://tasks-api-pdm.vercel.app/api/auth/login
+```
+
+### Tareas (requieren token)
+```
+GET    https://tasks-api-pdm.vercel.app/api/tasks
+POST   https://tasks-api-pdm.vercel.app/api/tasks
+PUT    https://tasks-api-pdm.vercel.app/api/tasks/:id
+DELETE https://tasks-api-pdm.vercel.app/api/tasks/:id
+```
+
+### Endpoints de desarrollo (sin autenticación)
+```
+GET https://tasks-api-pdm.vercel.app/api/tasks/dev/stats
+GET https://tasks-api-pdm.vercel.app/api/tasks/dev/all
+GET https://tasks-api-pdm.vercel.app/api/tasks/dev/upcoming
+```
