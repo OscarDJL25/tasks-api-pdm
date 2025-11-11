@@ -1,11 +1,12 @@
 # 📋 Tasks API - Proyecto PDM
 
 API REST para gestión de tareas desarrollada con Node.js, Express y PostgreSQL en AWS RDS.
+**🔗 Auto-deploy configurado con GitHub + Vercel**
 
 ## 🚀 Características
 
 - ✅ **API REST** completa con operaciones CRUD
-- ✅ **Autenticación JWT** para seguridad
+- ✅ **Autenticación JWT** para seguridad  
 - ✅ **PostgreSQL** en AWS RDS como base de datos
 - ✅ **Middleware** de autenticación
 - ✅ **CORS** configurado para apps móviles
