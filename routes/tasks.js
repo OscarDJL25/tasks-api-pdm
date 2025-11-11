@@ -19,10 +19,92 @@ router.put("/:id", verifyToken, updateTask);
 router.delete("/:id", verifyToken, deleteTask);
 
 // 🔍 Endpoints de desarrollo (sin autenticación para consultas rápidas)
+
+// Endpoint para verificar estructura de tablas
+router.get("/dev/schema", async (req, res) => {
+  try {
+    const tables = await pool.query(`
+      SELECT table_name 
+      FROM information_schema.tables 
+      WHERE table_schema = 'public'
+    `);
+    
+    const tasksColumns = await pool.query(`
+      SELECT column_name, data_type, is_nullable 
+      FROM information_schema.columns 
+      WHERE table_name = 'tasks'
+    `);
+    
+    const usersColumns = await pool.query(`
+      SELECT column_name, data_type, is_nullable 
+      FROM information_schema.columns 
+      WHERE table_name = 'users'
+    `);
+    
+    res.json({
+      tables: tables.rows,
+      tasks_columns: tasksColumns.rows,
+      users_columns: usersColumns.rows
+    });
+  } catch (error) {
+    res.status(500).json({ error: error.message });
+  }
+});
+
+// Endpoint para crear/verificar estructura de base de datos
+router.post("/dev/setup-db", async (req, res) => {
+  try {
+    // Crear tabla users si no existe
+    await pool.query(`
+      CREATE TABLE IF NOT EXISTS users (
+        id SERIAL PRIMARY KEY,
+        username VARCHAR(50) UNIQUE NOT NULL,
+        password VARCHAR(255) NOT NULL,
+        created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+      )
+    `);
+    
+    // Crear tabla tasks si no existe
+    await pool.query(`
+      CREATE TABLE IF NOT EXISTS tasks (
+        id SERIAL PRIMARY KEY,
+        title VARCHAR(255) NOT NULL,
+        description TEXT,
+        completed BOOLEAN DEFAULT false,
+        user_id INTEGER REFERENCES users(id) ON DELETE CASCADE,
+        created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+        updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+      )
+    `);
+    
+    // Si la tabla tasks ya existe pero no tiene la columna completed, agregarla
+    await pool.query(`
+      ALTER TABLE tasks 
+      ADD COLUMN IF NOT EXISTS completed BOOLEAN DEFAULT false
+    `);
+    
+    await pool.query(`
+      ALTER TABLE tasks 
+      ADD COLUMN IF NOT EXISTS updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+    `);
+    
+    res.json({ 
+      message: "Base de datos configurada correctamente",
+      tables_created: ["users", "tasks"],
+      columns_added: ["completed", "updated_at"]
+    });
+    
+  } catch (error) {
+    res.status(500).json({ error: error.message });
+  }
+});
+
 router.get("/dev/all", async (req, res) => {
   try {
     const result = await pool.query(`
-      SELECT id, title, description, completed, created_at, user_id 
+      SELECT id, title, description, 
+             COALESCE(completed, false) as completed, 
+             created_at, user_id 
       FROM tasks 
       ORDER BY created_at DESC
     `);
@@ -40,8 +122,8 @@ router.get("/dev/stats", async (req, res) => {
     const stats = await pool.query(`
       SELECT 
         COUNT(*) as total_tasks,
-        COUNT(CASE WHEN completed = true THEN 1 END) as completed_tasks,
-        COUNT(CASE WHEN completed = false THEN 1 END) as pending_tasks,
+        COUNT(CASE WHEN COALESCE(completed, false) = true THEN 1 END) as completed_tasks,
+        COUNT(CASE WHEN COALESCE(completed, false) = false THEN 1 END) as pending_tasks,
         COUNT(DISTINCT user_id) as total_users
       FROM tasks
     `);
