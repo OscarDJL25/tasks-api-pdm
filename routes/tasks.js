@@ -102,9 +102,9 @@ router.post("/dev/setup-db", async (req, res) => {
 router.get("/dev/all", async (req, res) => {
   try {
     const result = await pool.query(`
-      SELECT id, title, description, 
+      SELECT id, name, status, deadline,
              COALESCE(completed, false) as completed, 
-             created_at, user_id 
+             created_at, updated_at
       FROM tasks 
       ORDER BY created_at DESC
     `);
@@ -124,20 +124,28 @@ router.get("/dev/stats", async (req, res) => {
         COUNT(*) as total_tasks,
         COUNT(CASE WHEN COALESCE(completed, false) = true THEN 1 END) as completed_tasks,
         COUNT(CASE WHEN COALESCE(completed, false) = false THEN 1 END) as pending_tasks,
-        COUNT(DISTINCT user_id) as total_users
+        COUNT(CASE WHEN status = 'active' THEN 1 END) as active_tasks,
+        COUNT(CASE WHEN status = 'inactive' THEN 1 END) as inactive_tasks
       FROM tasks
     `);
     
     const recent = await pool.query(`
-      SELECT title, created_at 
+      SELECT name, status, created_at, deadline
       FROM tasks 
       ORDER BY created_at DESC 
       LIMIT 5
     `);
     
+    const byStatus = await pool.query(`
+      SELECT status, COUNT(*) as count
+      FROM tasks 
+      GROUP BY status
+    `);
+    
     res.json({
       statistics: stats.rows[0],
-      recent_tasks: recent.rows
+      recent_tasks: recent.rows,
+      tasks_by_status: byStatus.rows
     });
   } catch (error) {
     res.status(500).json({ error: error.message });
@@ -147,16 +155,57 @@ router.get("/dev/stats", async (req, res) => {
 router.get("/dev/by-user/:userId", async (req, res) => {
   try {
     const { userId } = req.params;
+    // Como no hay user_id en tasks, mostrar tareas por status o ID
     const result = await pool.query(`
       SELECT * FROM tasks 
-      WHERE user_id = $1 
+      WHERE id = $1 
       ORDER BY created_at DESC
     `, [userId]);
     
     res.json({
-      user_id: userId,
+      task_id: userId,
+      found: result.rows.length > 0,
+      task: result.rows[0] || null
+    });
+  } catch (error) {
+    res.status(500).json({ error: error.message });
+  }
+});
+
+// Nuevo endpoint para buscar por status
+router.get("/dev/by-status/:status", async (req, res) => {
+  try {
+    const { status } = req.params;
+    const result = await pool.query(`
+      SELECT * FROM tasks 
+      WHERE status = $1 
+      ORDER BY created_at DESC
+    `, [status]);
+    
+    res.json({
+      status: status,
       total: result.rows.length,
       tasks: result.rows
+    });
+  } catch (error) {
+    res.status(500).json({ error: error.message });
+  }
+});
+
+// Endpoint para tareas próximas a vencer
+router.get("/dev/upcoming", async (req, res) => {
+  try {
+    const result = await pool.query(`
+      SELECT * FROM tasks 
+      WHERE deadline IS NOT NULL 
+      AND deadline >= CURRENT_DATE 
+      ORDER BY deadline ASC 
+      LIMIT 10
+    `);
+    
+    res.json({
+      total: result.rows.length,
+      upcoming_tasks: result.rows
     });
   } catch (error) {
     res.status(500).json({ error: error.message });
