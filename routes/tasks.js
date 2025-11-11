@@ -212,4 +212,51 @@ router.get("/dev/upcoming", async (req, res) => {
   }
 });
 
+// Endpoint para sincronizar status y completed
+router.post("/dev/sync-completed", async (req, res) => {
+  try {
+    const result = await pool.query(`
+      UPDATE tasks 
+      SET completed = CASE 
+        WHEN status = 'completed' THEN true 
+        ELSE false 
+      END
+    `);
+    
+    const updated = await pool.query(`
+      SELECT id, name, status, completed 
+      FROM tasks 
+      ORDER BY id
+    `);
+    
+    res.json({
+      message: "Sincronización completada",
+      rows_affected: result.rowCount,
+      updated_tasks: updated.rows
+    });
+  } catch (error) {
+    res.status(500).json({ error: error.message });
+  }
+});
+
+// Endpoint para crear tarea de prueba
+router.post("/dev/create-test-task", async (req, res) => {
+  try {
+    const { name = "Tarea de prueba", status = "pending", deadline = null } = req.body;
+    
+    const result = await pool.query(`
+      INSERT INTO tasks (name, status, deadline, completed, created_at, updated_at)
+      VALUES ($1, $2, $3, $4, CURRENT_TIMESTAMP, CURRENT_TIMESTAMP)
+      RETURNING *
+    `, [name, status, deadline, status === 'completed']);
+    
+    res.json({
+      message: "Tarea creada",
+      task: result.rows[0]
+    });
+  } catch (error) {
+    res.status(500).json({ error: error.message });
+  }
+});
+
 export default router;
