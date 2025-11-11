@@ -10,12 +10,13 @@ API REST para gestión de tareas desarrollada con Node.js, Express y PostgreSQL 
 - ✅ **Middleware** de autenticación
 - ✅ **CORS** configurado para apps móviles
 - ✅ **SSL/TLS** ready para deploy en producción
+- ✅ **Deploy** en Vercel con HTTPS automático
 
 ## 🛠️ Tecnologías
 
 - **Node.js** - Runtime de JavaScript
 - **Express.js** - Framework web
-- **PostgreSQL** - Base de datos relacional
+- **PostgreSQL** - Base de datos relacional en AWS RDS
 - **JWT** - JSON Web Tokens para autenticación
 - **bcryptjs** - Encriptación de contraseñas
 - **pg** - Driver PostgreSQL para Node.js
@@ -208,3 +209,9 @@ Este proyecto está bajo la Licencia MIT - ver archivo [LICENSE](LICENSE) para d
 ---
 
 🚀 **¡API lista para conectar con tu app móvil!**
+
+## 🔗 Enlaces útiles
+
+- **Repositorio**: [GitHub](https://github.com/OscarDJL25/tasks-api-pdm)
+- **API en producción**: [Vercel](https://tasks-api-fh07ztm9g-oscar-daniel-de-jesus-lucios-projects.vercel.app)
+- **Base de datos**: PostgreSQL en AWS RDS
