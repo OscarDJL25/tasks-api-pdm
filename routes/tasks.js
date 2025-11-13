@@ -5,13 +5,28 @@ import {
   createTask,
   updateTask,
   deleteTask,
+  // Nuevos endpoints académicos
+  getTareas,
+  getTarea,
+  createTarea,
+  updateTarea,
+  deleteTarea,
+  toggleTareaFinalizada,
 } from "../controllers/taskController.js";
 import { verifyToken } from "../middleware/auth.js";
 import pool from "../config/db.js";
 
 const router = express.Router();
 
-// Rutas principales
+// ===== RUTAS ACADÉMICAS (PRINCIPAL) =====
+router.get("/tareas", verifyToken, getTareas);
+router.get("/tareas/:id", verifyToken, getTarea);
+router.post("/tareas", verifyToken, createTarea);
+router.put("/tareas/:id", verifyToken, updateTarea);
+router.delete("/tareas/:id", verifyToken, deleteTarea);
+router.patch("/tareas/:id/toggle", verifyToken, toggleTareaFinalizada);
+
+// ===== RUTAS ANTERIORES (COMPATIBILIDAD) =====
 router.get("/", verifyToken, getTasks);
 router.get("/:id", verifyToken, getTask);
 router.post("/", verifyToken, createTask);
@@ -51,7 +66,7 @@ router.get("/dev/schema", async (req, res) => {
   }
 });
 
-// Endpoint para crear/verificar estructura de base de datos
+// Endpoint para crear/verificar estructura de base de datos (ACTUALIZADO PARA PROYECTO ACADÉMICO)
 router.post("/dev/setup-db", async (req, res) => {
   try {
     // Crear tabla users si no existe
@@ -64,54 +79,55 @@ router.post("/dev/setup-db", async (req, res) => {
       )
     `);
     
-    // Crear tabla tasks si no existe
+    // Crear tabla tareas según especificaciones del proyecto académico
     await pool.query(`
-      CREATE TABLE IF NOT EXISTS tasks (
+      CREATE TABLE IF NOT EXISTS tareas (
         id SERIAL PRIMARY KEY,
-        title VARCHAR(255) NOT NULL,
-        description TEXT,
-        completed BOOLEAN DEFAULT false,
+        nombre VARCHAR(100) NOT NULL,
+        descripcion TEXT,
+        fecha_asignacion DATE NOT NULL,
+        hora_asignacion TIME NOT NULL,
+        fecha_entrega DATE,
+        hora_entrega TIME,
+        finalizada BOOLEAN DEFAULT FALSE,
+        prioridad INTEGER CHECK (prioridad BETWEEN 1 AND 10),
         user_id INTEGER REFERENCES users(id) ON DELETE CASCADE,
         created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
         updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
       )
     `);
     
-    // Agregar columnas que podrían faltar
+    // Si existe la tabla tasks antigua, migrar datos
     await pool.query(`
-      ALTER TABLE tasks 
-      ADD COLUMN IF NOT EXISTS completed BOOLEAN DEFAULT false
-    `);
-    
-    await pool.query(`
-      ALTER TABLE tasks 
-      ADD COLUMN IF NOT EXISTS updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
-    `);
-    
-    await pool.query(`
-      ALTER TABLE tasks 
-      ADD COLUMN IF NOT EXISTS name VARCHAR(255)
-    `);
-    
-    await pool.query(`
-      ALTER TABLE tasks 
-      ADD COLUMN IF NOT EXISTS status VARCHAR(50) DEFAULT 'pending'
-    `);
-    
-    await pool.query(`
-      ALTER TABLE tasks 
-      ADD COLUMN IF NOT EXISTS deadline DATE
-    `);
-    
-    await pool.query(`
-      ALTER TABLE tasks 
-      ADD COLUMN IF NOT EXISTS user_id INTEGER REFERENCES users(id) ON DELETE SET NULL
+      INSERT INTO tareas (nombre, descripcion, fecha_asignacion, hora_asignacion, finalizada, prioridad, user_id, created_at, updated_at)
+      SELECT 
+        COALESCE(name, 'Tarea sin nombre') as nombre,
+        'Migrado desde sistema anterior' as descripcion,
+        COALESCE(deadline, CURRENT_DATE) as fecha_asignacion,
+        COALESCE(EXTRACT(TIME FROM created_at), CURRENT_TIME) as hora_asignacion,
+        COALESCE(completed, false) as finalizada,
+        5 as prioridad,
+        user_id,
+        created_at,
+        updated_at
+      FROM tasks 
+      WHERE NOT EXISTS (SELECT 1 FROM tareas WHERE tareas.id = tasks.id)
     `);
     
     res.json({ 
-      message: "Base de datos configurada correctamente",
-      tables_created: ["users", "tasks"],
-      columns_added: ["completed", "updated_at", "name", "status", "deadline", "user_id"]
+      message: "Base de datos configurada para proyecto académico",
+      tables_created: ["users", "tareas"],
+      estructura_tareas: {
+        "id": "SERIAL PRIMARY KEY",
+        "nombre": "VARCHAR(100) NOT NULL",
+        "descripcion": "TEXT",
+        "fecha_asignacion": "DATE NOT NULL",
+        "hora_asignacion": "TIME NOT NULL", 
+        "fecha_entrega": "DATE",
+        "hora_entrega": "TIME",
+        "finalizada": "BOOLEAN DEFAULT FALSE",
+        "prioridad": "INTEGER CHECK (prioridad BETWEEN 1 AND 10)"
+      }
     });
     
   } catch (error) {

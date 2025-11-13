@@ -1,6 +1,7 @@
 import dotenv from "dotenv";
 import express from "express";
 import taskRoutes from "./routes/tasks.js";
+import tareasRoutes from "./routes/tareas.js";
 import authRoutes from "./routes/auth.js";
 
 dotenv.config();
@@ -19,10 +20,15 @@ app.use((req, res, next) => {
 });
 
 app.use(express.json());
-app.use("/api/tasks", taskRoutes);
+
+// ===== RUTAS EN ESPAÑOL (PRINCIPAL) =====
+app.use("/api/tareas", tareasRoutes);
 app.use("/api/auth", authRoutes);
 
-app.get("/", (req, res) => res.send("API Tasks funcionando ✅"));
+// ===== RUTAS ANTERIORES (COMPATIBILIDAD) =====
+app.use("/api/tasks", taskRoutes);
+
+app.get("/", (req, res) => res.send("API Tareas Académicas funcionando ✅ | Proyecto Dispositivos Móviles"));
 
 // Para Vercel serverless functions
 export default app;
