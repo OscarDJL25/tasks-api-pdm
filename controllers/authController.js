@@ -26,11 +26,11 @@ export const login = async (req, res) => {
       return res.status(401).json({ message: "Contraseña incorrecta" });
     }
 
-    // Generar token JWT
+    // Generar token JWT (duración: 1 año)
     const token = jwt.sign(
       { id: user.id, username: user.username }, 
       process.env.JWT_SECRET, 
-      { expiresIn: "24h" }
+      { expiresIn: "365d" } // 1 año
     );
     
     res.json({ 
@@ -74,11 +74,11 @@ export const register = async (req, res) => {
 
     const newUser = result.rows[0];
 
-    // Generar token para el usuario recién registrado
+    // Generar token para el usuario recién registrado (duración: 1 año)
     const token = jwt.sign(
       { id: newUser.id, username: newUser.username }, 
       process.env.JWT_SECRET, 
-      { expiresIn: "24h" }
+      { expiresIn: "365d" } // 1 año
     );
 
     res.status(201).json({

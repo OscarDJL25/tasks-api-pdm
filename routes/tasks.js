@@ -77,7 +77,7 @@ router.post("/dev/setup-db", async (req, res) => {
       )
     `);
     
-    // Si la tabla tasks ya existe pero no tiene la columna completed, agregarla
+    // Agregar columnas que podrían faltar
     await pool.query(`
       ALTER TABLE tasks 
       ADD COLUMN IF NOT EXISTS completed BOOLEAN DEFAULT false
@@ -88,10 +88,30 @@ router.post("/dev/setup-db", async (req, res) => {
       ADD COLUMN IF NOT EXISTS updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
     `);
     
+    await pool.query(`
+      ALTER TABLE tasks 
+      ADD COLUMN IF NOT EXISTS name VARCHAR(255)
+    `);
+    
+    await pool.query(`
+      ALTER TABLE tasks 
+      ADD COLUMN IF NOT EXISTS status VARCHAR(50) DEFAULT 'pending'
+    `);
+    
+    await pool.query(`
+      ALTER TABLE tasks 
+      ADD COLUMN IF NOT EXISTS deadline DATE
+    `);
+    
+    await pool.query(`
+      ALTER TABLE tasks 
+      ADD COLUMN IF NOT EXISTS user_id INTEGER REFERENCES users(id) ON DELETE SET NULL
+    `);
+    
     res.json({ 
       message: "Base de datos configurada correctamente",
       tables_created: ["users", "tasks"],
-      columns_added: ["completed", "updated_at"]
+      columns_added: ["completed", "updated_at", "name", "status", "deadline", "user_id"]
     });
     
   } catch (error) {

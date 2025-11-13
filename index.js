@@ -24,5 +24,11 @@ app.use("/api/auth", authRoutes);
 
 app.get("/", (req, res) => res.send("API Tasks funcionando ✅"));
 
+// Para Vercel serverless functions
+export default app;
+
+// Solo para desarrollo local (comentar en producción)
 const PORT = process.env.PORT || 3000;
-app.listen(PORT, () => console.log(`Servidor corriendo en puerto ${PORT}`));
+if (process.env.NODE_ENV !== 'production') {
+  app.listen(PORT, () => console.log(`Servidor corriendo en puerto ${PORT}`));
+}
