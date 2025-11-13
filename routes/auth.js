@@ -1,10 +1,11 @@
 import express from "express";
-import { login } from "../controllers/authController.js";
+import { login, register } from "../controllers/authController.js";
 import pool from "../config/db.js";
 
 const router = express.Router();
 
 router.post("/login", login);
+router.post("/register", register);
 
 // 🔍 Endpoint de desarrollo para ver usuarios
 router.get("/dev/users", async (req, res) => {
